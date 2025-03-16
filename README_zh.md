@@ -67,13 +67,9 @@
 - [🎬 演示视频](#-演示视频)
 - [✨️ 核心功能](#-核心功能)
 - [🛠️ 安装](#️-安装)
-  - [**选项1：使用 uv（推荐）**](#选项1使用-uv推荐)
-  - [**选项2：使用 venv 和 pip**](#选项2使用-venv-和-pip)
-  - [**选项3：使用 conda**](#选项3使用-conda)
-  - [**设置环境变量**](#设置环境变量)
-  - [**使用Docker运行**](#使用docker运行)
 - [🚀 快速开始](#-快速开始)
 - [🧰 工具包与功能](#-工具包与功能)
+  - [模型上下文协议 (MCP)](#模型上下文协议-mcp)
 - [🌐 网页界面](#-网页界面)
 - [🧪 实验](#-实验)
 - [⏱️ 未来计划](#️-未来计划)
@@ -84,7 +80,6 @@
 - [❓ 常见问题](#-常见问题)
 - [📚 探索 CAMEL 依赖](#-探索-camel-依赖)
 - [⭐ Star History](#-star-history)
-
 
 # 🔥 新闻
 
@@ -104,7 +99,20 @@
   </p>
 </div>
 
-- **[2025.03.15]**: 重构网页用户界面，提升系统稳定性；优化OWL Agent的运行机制，提高执行效率与性能；在SearchToolkit中整合百度搜索引擎
+<div style="background-color: #e3f2fd; padding: 12px; border-radius: 8px; border-left: 4px solid #1e88e5; margin: 10px 0;">
+  <h4 style="color: #1e88e5; margin: 0 0 8px 0;">
+    🎉 最新重大更新 - 2025年3月15日
+  </h4>
+  <p style="margin: 0;">
+    <b>重要改进：</b>
+    <ul style="margin: 5px 0 0 0; padding-left: 20px;">
+      <li>重构网页用户界面架构，显著提升系统稳定性 🏗️</li>
+      <li>优化OWL Agent执行机制，大幅提升性能与效率 🚀</li>
+    </ul>
+    <i>立即体验全新升级的自动化任务处理能力！</i>
+  </p>
+</div>
+
 - **[2025.03.12]**: 在SearchToolkit中添加了Bocha搜索功能，集成了火山引擎模型平台，并更新了Azure和OpenAI Compatible模型的结构化输出和工具调用能力。
 - **[2025.03.11]**: 我们添加了 MCPToolkit、FileWriteToolkit 和 TerminalToolkit，增强了 OWL Agent 的 MCP（模型上下文协议）集成、文件写入能力和终端命令执行功能。MCP 作为一个通用协议层，标准化了 AI 模型与各种数据源和工具的交互方式。
 - **[2025.03.09]**: 我们添加了基于网页的用户界面，使系统交互变得更加简便。
@@ -245,7 +253,9 @@ OWL 需要各种 API 密钥来与不同的服务进行交互。`owl/.env_templat
 
 ## **使用Docker运行**
 
-如果您希望使用Docker运行OWL项目，我们提供了完整的Docker支持：
+OWL可以通过Docker轻松部署，Docker提供了跨不同平台的一致环境。
+
+### **设置说明**
 
 ```bash
 # 克隆仓库
@@ -255,49 +265,66 @@ cd owl
 # 配置环境变量
 cp owl/.env_template owl/.env
 # 编辑.env文件，填入您的API密钥
+```
 
-# 选项1：直接使用docker-compose
-cd .container
+### **部署选项**
 
+#### **选项1：使用预构建镜像（推荐）**
+
+```bash
+# 此选项从Docker Hub下载一个即用型镜像
+# 最快速且推荐给大多数用户
 docker-compose up -d
 
 # 在容器中运行OWL
 docker-compose exec owl bash
-
-# 激活虚拟环境
-cd .. && source .venv/bin/activate && cd owl
-
-playwright install-deps 
-
-#运行例子演示脚本
+cd .. && source .venv/bin/activate
+playwright install-deps
 xvfb-python examples/run.py
+```
 
-# 选项2：使用提供的脚本构建和运行
+#### **选项2：本地构建镜像**
+
+```bash
+# 适用于需要自定义Docker镜像或无法访问Docker Hub的用户：
+# 1. 打开docker-compose.yml
+# 2. 注释掉"image: mugglejinx/owl:latest"行
+# 3. 取消注释"build:"部分及其嵌套属性
+# 4. 然后运行：
+docker-compose up -d --build
+
+# 在容器中运行OWL
+docker-compose exec owl bash
+cd .. && source .venv/bin/activate
+playwright install-deps
+xvfb-python examples/run.py
+```
+
+#### **选项3：使用便捷脚本**
+
+```bash
+# 导航到容器目录
 cd .container
+
+# 使脚本可执行并构建Docker镜像
 chmod +x build_docker.sh
 ./build_docker.sh
-# 在容器中运行OWL
+
+# 使用您的问题运行OWL
 ./run_in_docker.sh "您的问题"
 ```
 
-更多详细的Docker使用说明，包括跨平台支持、优化配置和故障排除，请参阅 [DOCKER_README.md](.container/DOCKER_README.md)
+### **MCP Desktop Commander设置**
 
-# 🚀 快速开始
-
-## 尝试 MCP（模型上下文协议）集成
-
-体验 MCP 的强大功能，运行我们的示例来展示多智能体信息检索和处理：
+如果在Docker中使用MCP Desktop Commander，请运行：
 
 ```bash
-# 设置 MCP 服务器（仅需一次性设置）
-npx -y @smithery/cli install @wonderwhy-er/desktop-commander --client claude
-npx @wonderwhy-er/desktop-commander setup
-
-# 运行 MCP 示例
-python examples/run_mcp.py
+npx -y @wonderwhy-er/desktop-commander setup --force-file-protocol
 ```
 
-这个示例展示了 OWL 智能体如何通过 MCP 协议无缝地与文件系统、网页自动化和信息检索进行交互。查看 `examples/run_mcp.py` 了解完整实现。
+更多详细的Docker使用说明，包括跨平台支持、优化配置和故障排除，请参阅 [DOCKER_README.md](.container/DOCKER_README_en.md)
+
+# 🚀 快速开始
 
 ## 基本用法
    
@@ -403,6 +430,8 @@ tools = [
     SearchToolkit().search_duckduckgo,
     SearchToolkit().search_google,  # 如果不可用请注释
     SearchToolkit().search_wiki,
+    SearchToolkit().search_bocha,
+    SearchToolkit().search_baidu,
     *ExcelToolkit().get_tools(),
     *DocumentProcessingToolkit(model=models["document"]).get_tools(),
     *FileWriteToolkit(output_dir="./").get_tools(),
@@ -448,6 +477,16 @@ assistant_agent_kwargs = {"model": models["assistant"], "tools": tools}
 选择必要的工具包可优化性能并减少资源使用。
 
 # 🌐 网页界面
+
+<div align="center" style="background-color: #f0f7ff; padding: 15px; border-radius: 10px; border: 2px solid #1e88e5; margin: 20px 0;">
+  <h3 style="color: #1e88e5; margin: 0;">
+    🚀 全新升级的网页界面现已发布！
+  </h3>
+  <p style="margin: 10px 0;">
+    体验更稳定的系统性能和优化后的执行效率。
+    通过我们直观的界面，开启OWL强大功能的探索之旅！
+  </p>
+</div>
 
 OWL 现在包含一个基于网页的用户界面，使与系统交互变得更加容易。要启动网页界面，请运行：
 
@@ -520,10 +559,9 @@ python examples/run_gaia_roleplaying.py
 3. 提交包含您改进的拉取请求
 
 **当前开放贡献的问题：**
-- [#1857](https://github.com/camel-ai/camel/issues/1857)
-- [#1770](https://github.com/camel-ai/camel/issues/1770)
+- [#1876](https://github.com/camel-ai/camel/issues/1876)
+- [#1877](https://github.com/camel-ai/camel/issues/1877)
 - [#1712](https://github.com/camel-ai/camel/issues/1712)
-- [#1537](https://github.com/camel-ai/camel/issues/1537)
 
 要认领一个问题，只需在该问题下留言表明您的兴趣即可。
 
@@ -531,9 +569,8 @@ python examples/run_gaia_roleplaying.py
 加入我们的 ([*Discord*](https://discord.camel-ai.org/) 或 [*微信*](https://ghli.org/camel/wechat.png)) 社区，一起探索智能体扩展规律的边界。
 
 加入我们，参与更多讨论！
-<!-- ![](./assets/community.png) -->
-![](./assets/community.jpg)
-<!-- ![](./assets/meetup.jpg) -->
+
+![](./assets/community.jpeg)
 
 # ❓ 常见问题
 

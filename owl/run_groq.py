@@ -12,13 +12,24 @@
 # limitations under the License.
 # ========= Copyright 2023-2024 @ CAMEL-AI.org. All Rights Reserved. =========
 
-# To run this file, you need to configure the Qwen API key
-# You can obtain your API key from Bailian platform: bailian.console.aliyun.com
-# Set it as QWEN_API_KEY="your-api-key" in your .env file or add it to your environment variables
+"""
+This module provides integration with the Groq API platform for the OWL system.
+
+It configures different agent roles with appropriate Groq models based on their requirements:
+- Tool-intensive roles (assistant, web, planning, video, image) use GROQ_LLAMA_3_3_70B
+- Document processing uses GROQ_MIXTRAL_8_7B
+- Simple roles (user) use GROQ_LLAMA_3_1_8B
+
+To use this module:
+1. Set GROQ_API_KEY in your .env file
+2. Set OPENAI_API_BASE_URL to "https://api.groq.com/openai/v1"
+3. Run with: python -m owl.run_groq
+"""
 
 from dotenv import load_dotenv
 from camel.models import ModelFactory
 from camel.toolkits import (
+    AudioAnalysisToolkit,
     CodeExecutionToolkit,
     ExcelToolkit,
     ImageAnalysisToolkit,
@@ -28,68 +39,60 @@ from camel.toolkits import (
     FileWriteToolkit,
 )
 from camel.types import ModelPlatformType, ModelType
-from camel.societies import RolePlaying
-
-from owl.utils import run_society, DocumentProcessingToolkit
-
 from camel.logger import set_log_level
 
+from utils import OwlRolePlaying, run_society, DocumentProcessingToolkit
 
-import pathlib
-
-base_dir = pathlib.Path(__file__).parent.parent
-env_path = base_dir / "owl" / ".env"
-load_dotenv(dotenv_path=str(env_path))
+load_dotenv()
 
 set_log_level(level="DEBUG")
 
 
-def construct_society(question: str) -> RolePlaying:
-    """
-    Construct a society of agents based on the given question.
+def construct_society(question: str) -> OwlRolePlaying:
+    r"""Construct a society of agents based on the given question.
 
     Args:
         question (str): The task or question to be addressed by the society.
 
     Returns:
-        RolePlaying: A configured society of agents ready to address the question.
+        OwlRolePlaying: A configured society of agents ready to address the question.
     """
 
     # Create models for different components
     models = {
         "user": ModelFactory.create(
-            model_platform=ModelPlatformType.QWEN,
-            model_type=ModelType.QWEN_MAX,
+            model_platform=ModelPlatformType.GROQ,
+            model_type=ModelType.GROQ_LLAMA_3_1_8B,  # Simple role, can use 8B model
             model_config_dict={"temperature": 0},
         ),
         "assistant": ModelFactory.create(
-            model_platform=ModelPlatformType.QWEN,
-            model_type=ModelType.QWEN_MAX,
+            model_platform=ModelPlatformType.GROQ,
+            model_type=ModelType.GROQ_LLAMA_3_3_70B,  # Main assistant needs tool capability
             model_config_dict={"temperature": 0},
         ),
         "web": ModelFactory.create(
-            model_platform=ModelPlatformType.QWEN,
-            model_type=ModelType.QWEN_VL_MAX,
+            model_platform=ModelPlatformType.GROQ,
+            model_type=ModelType.GROQ_LLAMA_3_3_70B,  # Web browsing requires tool usage
             model_config_dict={"temperature": 0},
         ),
         "planning": ModelFactory.create(
-            model_platform=ModelPlatformType.QWEN,
-            model_type=ModelType.QWEN_MAX,
+            model_platform=ModelPlatformType.GROQ,
+            model_type=ModelType.GROQ_LLAMA_3_3_70B,  # Planning requires complex reasoning
             model_config_dict={"temperature": 0},
         ),
         "video": ModelFactory.create(
-            model_platform=ModelPlatformType.QWEN,
-            model_type=ModelType.QWEN_VL_MAX,
+            model_platform=ModelPlatformType.GROQ,
+            model_type=ModelType.GROQ_LLAMA_3_3_70B,  # Video analysis is multimodal
             model_config_dict={"temperature": 0},
         ),
         "image": ModelFactory.create(
-            model_platform=ModelPlatformType.QWEN,
-            model_type=ModelType.QWEN_VL_MAX,
+            model_platform=ModelPlatformType.GROQ,
+            model_type=ModelType.GROQ_LLAMA_3_3_70B,  # Image analysis is multimodal
             model_config_dict={"temperature": 0},
         ),
         "document": ModelFactory.create(
-            model_platform=ModelPlatformType.QWEN,
-            model_type=ModelType.QWEN_VL_MAX,
+            model_platform=ModelPlatformType.GROQ,
+            model_type=ModelType.GROQ_MIXTRAL_8_7B,  # Document processing can use Mixtral
             model_config_dict={"temperature": 0},
         ),
     }
@@ -100,15 +103,14 @@ def construct_society(question: str) -> RolePlaying:
             headless=False,  # Set to True for headless mode (e.g., on remote servers)
             web_agent_model=models["web"],
             planning_agent_model=models["planning"],
-            output_language="Chinese",
         ).get_tools(),
         *VideoAnalysisToolkit(model=models["video"]).get_tools(),
+        *AudioAnalysisToolkit().get_tools(),  # This requires OpenAI Key
         *CodeExecutionToolkit(sandbox="subprocess", verbose=True).get_tools(),
         *ImageAnalysisToolkit(model=models["image"]).get_tools(),
         SearchToolkit().search_duckduckgo,
         SearchToolkit().search_google,  # Comment this out if you don't have google search
         SearchToolkit().search_wiki,
-        SearchToolkit().search_baidu,
         *ExcelToolkit().get_tools(),
         *DocumentProcessingToolkit(model=models["document"]).get_tools(),
         *FileWriteToolkit(output_dir="./").get_tools(),
@@ -125,13 +127,12 @@ def construct_society(question: str) -> RolePlaying:
     }
 
     # Create and return the society
-    society = RolePlaying(
+    society = OwlRolePlaying(
         **task_kwargs,
         user_role_name="user",
         user_agent_kwargs=user_agent_kwargs,
         assistant_role_name="assistant",
         assistant_agent_kwargs=assistant_agent_kwargs,
-        output_language="Chinese",
     )
 
     return society
@@ -140,9 +141,12 @@ def construct_society(question: str) -> RolePlaying:
 def main():
     r"""Main function to run the OWL system with an example question."""
     # Example research question
-    question = "浏览亚马逊并找出一款对程序员有吸引力的产品。请提供产品名称和价格"
+    question = "Navigate to Amazon.com and identify one product that is attractive to coders. Please provide me with the product name and price. No need to verify your answer."
 
     # Construct and run the society
+    # Note: This configuration uses GROQ_LLAMA_3_3_70B for tool-intensive roles (assistant, web, planning, video, image)
+    # and GROQ_MIXTRAL_8_7B for document processing. GROQ_LLAMA_3_1_8B is used only for the user role
+    # which doesn't require tool usage capabilities.
     society = construct_society(question)
     answer, chat_history, token_count = run_society(society)
 

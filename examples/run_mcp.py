@@ -27,15 +27,16 @@ Environment Setup:
    ```bash
    # Install MCP service
    npx -y @smithery/cli install @wonderwhy-er/desktop-commander --client claude
-   npx @wonderwhy-er/desktop-commander setup
+   npx -y @wonderwhy-er/desktop-commander setup --force-file-protocol
 
-   # Configure in owl/mcp_servers_config.json:
+   # Configure in owl/examples/mcp_servers_config.json:
    {
      "desktop-commander": {
        "command": "npx",
        "args": [
          "-y",
-         "@wonderwhy-er/desktop-commander"
+         "@wonderwhy-er/desktop-commander",
+         "--force-file-protocol"
        ]
      }
    }
@@ -104,8 +105,12 @@ from camel.toolkits import MCPToolkit
 
 from owl.utils.enhanced_role_playing import OwlRolePlaying, arun_society
 
+import pathlib
 
-load_dotenv()
+base_dir = pathlib.Path(__file__).parent.parent
+env_path = base_dir / "owl" / ".env"
+load_dotenv(dotenv_path=str(env_path))
+
 set_log_level(level="DEBUG")
 
 
@@ -161,9 +166,10 @@ async def main():
         await mcp_toolkit.connect()
 
         question = (
-            "I'd like a academic report about Andrew Ng, including his research "
-            "direction, published papers (At least 3), institutions, etc."
-            "Then organize the report in Markdown format and save it to my desktop"
+            "I'd like a academic report about Andrew Ng, including "
+            "his research direction, published papers (At least 3),"
+            " institutions, etc.Then organize the report in Markdown "
+            "format and save it to my desktop"
         )
 
         # Connect to all MCP toolkits
