@@ -136,8 +136,6 @@ examples/run_mcp.py
 
 大框架：安装各个npm包，然后修改配置文件，然后逐步调试
 
-现在的npm version:9.5.1
-
 发现这是一个普遍存在的issue=》需要同步一下这个文件，让他能适应windows
 
 同步原始仓库：git remote -v，发现已经有远程仓库。我们的仓库是origin
@@ -146,4 +144,220 @@ examples/run_mcp.py
 git fetch upstream
 git merge upstream/master
 ```
+
+已经成功同步。然后安装别的东西，并确认配置文件=》已经都添加上了
+
+现在的报错：Error code: 403 - {'error': {'code': 'unsupported_country_region_territory', 'message': 'Country, 
+region, or territory not supported', 'param': None, 'type': 'request_forbidden'}}
+
+原因：openai=》把下面改了，然后就能运行
+
+![image-20250316233411692](D:\app\typora\image-20250316233411692.png)
+
+收到了新的警告：node需要在10版本以上。现在的npm version:9.5.1
+
+安装了npm-windows，并理论上已经安装了环境变量，只需要重启一下=》成功
+
+```bash
+nvm install lts
+nvm list
+nvm use 22.14.0
+```
+
+另外还要注意：要用cmd窗口执行
+
+npx -y @wonderwhy-er/desktop-commander@latest setup --force-file-protocol --path file:///D:/vs_temp/owl
+
+发现是包的问题，等后面再解决
+
+#### MCP运行结果
+
+问题：搜索某个作者的学术报告，然后整理成markdown并保存
+
+结果：自称已经保存，实际上没保存，说明不对
+
+### 理解代码
+
+看到了官网：[代理 — CAMEL 0.2.31 文档 (camel-ai.org)](https://docs.camel-ai.org/key_modules/agents.html)
+
+打算先自己理解，然后再看官网和代码有什么区别和联系
+
+#### 关于工具
+
+执行命令来安装工具：pip install camel-ai[tools] --target=D:\anaconda3\envs\owl\Lib\site-packages
+
+```
+ERROR: pip's dependency resolver does not currently take into account all the packages that are installed. This behaviour is the source of the following dependency conflicts.
+gensim 4.3.0 requires FuzzyTM>=0.4.0, which is not installed.
+numba 0.56.4 requires numpy<1.24,>=1.18, but you have numpy 1.26.4 which is incompatible.
+jupyter-server 1.23.4 requires anyio<4,>=3.1.0, but you have anyio 4.9.0 which is incompatible.
+conda-repo-cli 1.0.27 requires clyent==1.2.1, but you have clyent 1.2.2 which is incompatible.
+conda-repo-cli 1.0.27 requires nbformat==5.4.0, but you have nbformat 5.7.0 which is incompatible.
+conda-repo-cli 1.0.27 requires PyYAML==6.0, but you have pyyaml 6.0.2 which is incompatible.
+conda-repo-cli 1.0.27 requires requests==2.28.1, but you have requests 2.32.3 which is incompatible.
+```
+
+然后试验看能否使用工具：能，顺利新建了一个工具并输出了。代码是：先定义一个函数，然后add_tool = FunctionTool(add)。这个新建的工具有一些默认的方法，并且可以传递给大模型
+
+注意到所有工具都要用FunctionTool封装一次
+
+#### 关于Agent
+
+注意到千问这个例子没有用到。有多种类型的agent
+
+![image-20250317102501197](D:\app\typora\image-20250317102501197.png)
+
+#### 关于思维链等
+
+注意到是封装在datagen这个类里：
+
+![image-20250317103050669](D:\app\typora\image-20250317103050669.png)
+
+如何找到源码=》找到camel的仓库，看到了[camel-ai/camel: 🐫 CAMEL: Finding the Scaling Law of Agents. The first and the best multi-agent framework. https://www.camel-ai.org (github.com)](https://github.com/camel-ai/camel)
+
+思考：快速看一下self-instruct的源码，看是否有参考价值=》应该有。架构很好
+
+##### 思维链
+
+有以下函数：`monte_carlo_tree_search`、`binary_search_error` 和 `solve`。每个函数都有明确的职责，下面我将逐一解释每个函数的作用和逻辑。
+
+**1. `monte_carlo_tree_search` 函数**
+
+这个函数实现了蒙特卡洛树搜索（Monte Carlo Tree Search, MCTS），用于通过模拟和评估找到最佳解决方案。
+
+**功能**
+
+- **输入**：
+  - `question`：需要解决的问题。
+  - `partial_solution`：当前的部分解（默认为空字符串）。
+- **输出**：
+  - 返回当前解与标准答案之间的相似度评分（`float` 类型）。
+
+**逻辑**
+
+1. **检查是否有标准答案**：
+   - 如果问题没有对应的标准答案，抛出 `ValueError`。
+2. **构建评估提示**：
+   - 构建一个提示字符串，包含问题、部分解和标准答案，要求评估模型给出一个 0 到 1 之间的评分。
+3. **调用生成器代理**：
+   - 重置生成器代理（`generator_agent`），并使用构建的提示字符串调用 `step` 方法。
+   - 解析生成器代理的响应，提取评分。
+4. **返回评分**：
+   - 返回评分作为函数的输出。
+
+**2. `binary_search_error` 函数**
+
+这个函数使用二分查找算法来定位解决方案中的第一个错误。
+
+**功能**
+
+- **输入**：
+  - `question`：需要解决的问题。
+  - `solution`：完整的解决方案。
+- **输出**：
+  - 返回第一个错误的位置（`int` 类型）。如果没有错误，返回 -1。
+
+**逻辑**
+
+1. **分割句子**：
+   - 使用英文句号和中文句号将解决方案分割成句子。
+2. **检查整个解决方案是否正确**：
+   - 如果整个解决方案正确，返回 -1。
+3. **二分查找**：
+   - 使用二分查找算法，逐步缩小范围，找到第一个错误的位置。
+   - 每次检查当前部分解是否正确，根据结果调整搜索范围。
+4. **返回错误位置**：
+   - 返回第一个错误的位置。
+
+**3. `solve` 函数**
+
+这个函数是一个多步求解器，用于解决给定的问题。它结合了直接求解、蒙特卡洛树搜索和二分查找错误的方法。
+
+**功能**
+
+- **输入**：
+  - `question`：需要解决的问题。
+- **输出**：
+  - 返回找到的最佳解决方案（`str` 类型）。
+
+**逻辑**
+
+1. **尝试直接求解**：
+   - 使用 `get_answer` 方法尝试直接求解问题。
+   - 如果直接求解的结果正确，直接返回该解。
+2. **蒙特卡洛树搜索**：
+   - 如果直接求解失败，使用蒙特卡洛树搜索找到一个评分较高的解。
+   - 生成新的解，并评估其与标准答案的相似度。
+   - 如果找到评分超过 0.9 的解，提前结束搜索并返回该解。
+3. **二分查找错误**：
+   - 如果最终解仍然不完全正确，使用二分查找定位错误。
+4. **生成新的解**：
+   - 根据正确的部分生成新的解，并将结果存储在 `solution_tree` 中。
+   - 返回最终解。
+
+**代码中的关键点**
+
+- **`verify_answer` 方法**：用于验证解决方案是否正确。
+- **`get_answer` 方法**：用于生成解决方案。
+- **`generator_agent`**：一个代理对象，用于生成和评估解决方案。
+- **`solution_tree`**：一个字典，用于存储问题及其对应的解决方案和错误位置。
+
+##### 自发现
+
+注意到豆包可以在线查看仓库。
+
+![image-20250317121733323](D:\app\typora\image-20250317121733323.png)
+
+![image-20250317121803542](D:\app\typora\image-20250317121803542.png)
+
+![image-20250317122358212](D:\app\typora\image-20250317122358212.png)
+
+![image-20250317122522394](D:\app\typora\image-20250317122522394.png)
+
+![image-20250317122747134](D:\app\typora\image-20250317122747134.png)
+
+原理：加载人类编写的种子指令、种子任务，然后以此为基础生成指令等（官网有完整解释）
+
+#### 消息
+
+- `role_name`：用户或助理角色的名称。
+- `role_type`：角色的类型，或 。`RoleType.ASSISTANT``RoleType.USER`
+- `meta_dict`：消息的可选元数据字典。
+- `content`：消息的内容。
+
+```python
+message = BaseMessage(
+    role_name="test_user",
+    role_type=RoleType.USER,
+    content="test content"
+)
+```
+
+消息传递：
+
+![image-20250317130953418](D:\app\typora\image-20250317130953418.png)
+
+#### qwen代码
+
+society是RolePlaying的实例，注意到有额外传递这些参数
+
+![image-20250317132447133](D:\app\typora\image-20250317132447133.png)
+
+构建好society就运行它。owl\utils\enhanced_role_playing.py有init RolePlaying和运行society，一般每个文件会用自己的参数传入RolePlaying进行构建，然后自动化运行
+
+### 写代码：构建planning
+
+思路是，把相关文件复制过来，在项目里import这个自定义的包
+
+在哪里进行规划=》注意到model里有planning（设置了这个模型用千问）
+
+注意到可以给assistant_agent_kwargs设置工具
+
+计划把例子全部看一遍再开始写。
+
+
+
+
+
+周二你需要做什么：做出初版，给出效果图（相当于最低程度的版本）
 

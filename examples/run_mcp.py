@@ -108,7 +108,7 @@ from owl.utils.enhanced_role_playing import OwlRolePlaying, arun_society
 import pathlib
 
 base_dir = pathlib.Path(__file__).parent.parent
-env_path = base_dir / "owl" / ".env"
+env_path = base_dir / ".env"
 load_dotenv(dotenv_path=str(env_path))
 
 set_log_level(level="DEBUG")
@@ -126,13 +126,13 @@ async def construct_society(
     """
     models = {
         "user": ModelFactory.create(
-            model_platform=ModelPlatformType.OPENAI,
-            model_type=ModelType.GPT_4O,
+            model_platform=ModelPlatformType.QWEN,
+            model_type=ModelType.QWEN_MAX,
             model_config_dict={"temperature": 0},
         ),
         "assistant": ModelFactory.create(
-            model_platform=ModelPlatformType.OPENAI,
-            model_type=ModelType.GPT_4O,
+            model_platform=ModelPlatformType.QWEN,
+            model_type=ModelType.QWEN_MAX,
             model_config_dict={"temperature": 0},
         ),
     }
