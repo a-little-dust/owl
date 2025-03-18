@@ -440,7 +440,7 @@ class OwlGAIARolePlaying(OwlRolePlaying):
 def run_society(
     society: OwlRolePlaying,
     round_limit: int = 15,
-) -> Tuple[str, List[dict], dict]:
+) -> Tuple[str, List[dict], dict]:#参数有：要运行的society，最大轮数
     overall_completion_token_count = 0
     overall_prompt_token_count = 0
 

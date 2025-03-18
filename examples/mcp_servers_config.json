@@ -11,6 +11,10 @@
     "playwright": {
       "command": "npx",
       "args": ["-y", "@executeautomation/playwright-mcp-server"]
+    },
+    "fetch": {
+      "command": "python",
+      "args": ["-m", "mcp_server_fetch"]
     }
   }
 }

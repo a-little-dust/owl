@@ -26,7 +26,7 @@ from camel.toolkits import (
     VideoAnalysisToolkit,
     BrowserToolkit,
     FileWriteToolkit,
-)
+) # 引入工具包
 from camel.types import ModelPlatformType, ModelType
 from camel.societies import RolePlaying
 
