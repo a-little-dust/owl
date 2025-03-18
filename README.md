@@ -1,4 +1,6 @@
-已经执行的命令：
+### 初步了解
+
+#### 创建环境
 
 conda create --prefix 
 
@@ -8,6 +10,8 @@ conda activate D:\anaconda3\envs\owl
 
 pip install -e .
 
+#### 设置API key
+
 设置环境变量：拷贝一份.env文件，然后设置api key（为什么这样做：因为这样不会像环境变量一样 每次打开session都要重新设置一次）
 
 注意到这里有一些谷歌搜索相关的key，所以依次注册=》已经顺利完成了，一般只需要提供邮箱地址
@@ -16,7 +20,7 @@ pip install -e .
 
 mcp：examples/run_mcp.py。这需要先设置claude客户端
 
-理解一下readme：
+#### 理解readme
 
 对不同的模型设置了不同的脚本，例如qwen
 
@@ -37,26 +41,29 @@ mcp：examples/run_mcp.py。这需要先设置claude客户端
 
 ![image-20250316000733635](D:\app\typora\image-20250316000733635.png)
 
+#### 尝试运行
+
 那么，运行一下=》发现这里设置的模型类型是gpt4
 
 ![image-20250316001839749](D:\app\typora\image-20250316001839749.png)
 
-解决办法是 找了qwen_zh版本，他比mini版本 使用了更多工具。逐步调试=》一开始发现运行不起来，所以新建了一个hello world来测试。按下Ctrl + Shift + P，然后输入Python: Select Interpreter来选择正确的解释器，这样就行
+解决办法是 找了qwen_zh版本，他比mini版本 使用了更多工具
+
+逐步调试=》一开始发现运行不起来，所以新建了一个hello world来测试。按下Ctrl + Shift + P，然后输入Python: Select Interpreter来选择正确的解释器，这样就行
 
 发现找不到模块=》执行pip list，发现没有，执行python -c "import dotenv;"，发现报错
 
 解决：set PYTHONPATH=d:/python;%PYTHONPATH%，发现这样就能执行了
 
-长期：1.添加环境变量，让PYTHONPATH等于上面这个（这是因为之前pip install的时候指定了target）
-
-2.重启
+长期：1.添加环境变量，让PYTHONPATH等于上面这个（这是因为之前pip install的时候指定了target）2.重启
 
 遇到了新的报错：from .base_events import *，感觉和路径有关。应该这样解决：pip uninstall 这个包
 
 更永久的解决办法：pip install -e . --target=D:\anaconda3\envs\owl\Lib\site-packages
 
-先清理一下空间。
+清理一下空间。执行安装，重启。然后再次运行=》运行成功了。
 
+报错说没有看到环境变量=》把.env文件移动到根目录
 
 看下返回=》在run_society的时候，会调用很多工具。
 
